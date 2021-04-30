@@ -16,12 +16,9 @@ end
 module SimpleCov
   module Formatter
     class HTMLFormatter # rubocop:disable Metrics/ClassLength
-      def initialize
-        @branch_coverage = SimpleCov.branch_coverage?
-        @method_coverage = SimpleCov.method_coverage?
-      end
-
       def format(result)
+        @instance = result.instance
+
         Dir[File.join(File.dirname(__FILE__), "../public/*")].each do |path|
           FileUtils.cp_r(path, asset_output_path)
         end
@@ -29,6 +26,7 @@ module SimpleCov
         File.open(File.join(output_path, "index.html"), "wb") do |file|
           file.puts template("layout").result(binding)
         end
+
         puts output_message(result)
       end
 
@@ -43,17 +41,11 @@ module SimpleCov
       end
 
       def branch_coverage?
-        # cached in initialize because we truly look it up a whole bunch of times
-        # and it's easier to cache here then in SimpleCov because there we might
-        # still enable/disable branch coverage criterion
-        @branch_coverage
+        instance.branch_coverage?
       end
 
       def method_coverage?
-        # cached in initialize because we truly look it up a whole bunch of times
-        # and it's easier to cache here then in SimpleCov because there we might
-        # still enable/disable branch coverage criterion
-        @method_coverage
+        instance.method_coverage?
       end
 
       def line_status?(source_file, line)
@@ -66,13 +58,15 @@ module SimpleCov
 
     private
 
+      attr_reader :instance
+
       # Returns the an erb instance for the template of given name
       def template(name)
         ERB.new(File.read(File.join(File.dirname(__FILE__), "../views/", "#{name}.erb")))
       end
 
       def output_path
-        SimpleCov.coverage_path
+        instance.coverage_path
       end
 
       def asset_output_path
@@ -138,7 +132,7 @@ module SimpleCov
       end
 
       def shortened_filename(source_file)
-        source_file.filename.sub(SimpleCov.root, ".").gsub(/^\.\//, "")
+        source_file.filename.sub(instance.root, ".").gsub(/^\.\//, "")
       end
 
       def link_to_source_file(source_file)
