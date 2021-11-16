@@ -146,7 +146,7 @@ module SimpleCov
           "%<covered>d / %<total>d (%<percent>.2f%%)",
           :covered => stats.covered,
           :total => stats.total,
-          :percent => stats.percent
+          :percent => SimpleCov::Utils.round_coverage(stats.percent)
         )
       end
     end
