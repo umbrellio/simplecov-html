@@ -5,12 +5,11 @@ require "cgi"
 require "fileutils"
 require "digest/sha1"
 require "time"
-require "base64"
 
 # Ensure we are using a compatible version of SimpleCov
 major, minor, patch = SimpleCov::VERSION.scan(/\d+/).first(3).map(&:to_i)
 if major < 0 || minor < 9 || patch < 0
-  raise "The version of SimpleCov you are using is too old. "\
+  raise "The version of SimpleCov you are using is too old. " \
         "Please update with `gem install simplecov` or `bundle update simplecov`"
 end
 
@@ -28,7 +27,7 @@ module SimpleCov
       def format(result)
         unless @inline_assets
           Dir[File.join(@public_assets_dir, "*")].each do |path|
-            FileUtils.cp_r(path, asset_output_path)
+            FileUtils.cp_r(path, asset_output_path, remove_destination: true)
           end
         end
 
@@ -38,15 +37,7 @@ module SimpleCov
         puts output_message(result)
       end
 
-      def output_message(result)
-        parts = []
-        parts << "Coverage report generated for #{result.command_name} to #{output_path}"
-        parts << "Line coverage: #{render_stats(result, :line)}"
-        parts << "Branch coverage: #{render_stats(result, :branch)}" if branch_coverage?
-        parts << "Method coverage: #{render_stats(result, :method)}" if method_coverage?
-
-        parts.join("\n")
-      end
+    private
 
       def branch_coverage?
         # cached in initialize because we truly look it up a whole bunch of times
@@ -70,7 +61,15 @@ module SimpleCov
         end
       end
 
-    private
+      def output_message(result)
+        parts = []
+        parts << "Coverage report generated for #{result.command_name} to #{output_path}"
+        parts << "Line coverage: #{render_stats(result, :line)}"
+        parts << "Branch coverage: #{render_stats(result, :branch)}" if branch_coverage?
+        parts << "Method coverage: #{render_stats(result, :method)}" if method_coverage?
+
+        parts.join("\n")
+      end
 
       # Returns the an erb instance for the template of given name
       def template(name)
@@ -99,18 +98,21 @@ module SimpleCov
         value.gsub(/^[^a-zA-Z]+/, "").gsub(/[^a-zA-Z0-9\-_]/, "")
       end
 
+      # Only have a few content types, just hardcode them
+      CONTENT_TYPES = {
+        ".js" => "text/javascript",
+        ".png" => "image/png",
+        ".gif" => "image/gif",
+        ".css" => "text/css",
+      }.freeze
+
       def asset_inline(name)
         path = File.join(@public_assets_dir, name)
+        # Equivalent to `Base64.strict_encode64(File.read(path))` but without depending on Base64
+        base64_content = [File.read(path)].pack("m0")
 
-        # Only have a few content types, just hardcode them
-        content_type = {
-          ".js" => "text/javascript",
-          ".png" => "image/png",
-          ".gif" => "image/gif",
-          ".css" => "text/css",
-        }[File.extname(name)]
+        content_type = CONTENT_TYPES[File.extname(name)]
 
-        base64_content = Base64.strict_encode64 File.read(path)
         "data:#{content_type};base64,#{base64_content}"
       end
 
