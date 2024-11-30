@@ -15,7 +15,7 @@ end
 
 module SimpleCov
   module Formatter
-    class HTMLFormatter # rubocop:disable Metrics/ClassLength
+    class HTMLFormatter
       def initialize
         @branch_coverage = SimpleCov.branch_coverage?
         @method_coverage = SimpleCov.method_coverage?
