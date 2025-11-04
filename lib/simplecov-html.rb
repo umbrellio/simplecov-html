@@ -46,7 +46,6 @@ module SimpleCov
 
     private
 
-
       def branch_coverage?
         # cached in initialize because we truly look it up a whole bunch of times
         # and it's easier to cache here then in SimpleCov because there we might
